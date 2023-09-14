@@ -8,7 +8,6 @@ from langchain.llms import OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain, SequentialChain
 from langchain.memory import ConversationBufferMemory
-#from langchain.utilities import WikipediaAPIWrapper
 
 os.environ['OPENAI_API_KEY'] = apikey_GPT
 
@@ -22,8 +21,8 @@ skills_template = PromptTemplate(
 )
 
 plan_template = PromptTemplate(
-    input_variables = ['skills'], # 'wikipedia_research'],
-    template = 'write me short paragraph summary of how to learn these topics: {skills}. Make sure to mention the links to resources at the bottom' #while using this research: {wikipedia_research}'
+    input_variables = ['skills', 'topic'],
+    template = 'In the context of learning {topic}, write me short paragraph summary of how to learn these topics: {skills}. Make sure to mention the links to resources at the bottom'
 )
 
 # Memory
@@ -35,38 +34,22 @@ llm = OpenAI(temperature=0.9)
 skills_chain = LLMChain(llm=llm, prompt=skills_template, output_key='skills', memory=skills_memory)
 plan_chain = LLMChain(llm=llm, prompt=plan_template, output_key='plan', memory=plan_memory)
 
-#sequential_chain = SequentialChain(
-#    chains=[skills_chain, plan_chain],
-#    input_variables=['topic'],
-#    output_variables=['skills', 'plan']
-#)
-
-# API Calls and Scraping
-#wiki = WikipediaAPIWrapper()
-
-# Prompt and response
 if prompt:
-    #response = sequential_chain({'topic': prompt})
 
     skills = skills_chain.run(prompt)
-    plan = plan_chain.run(skills=skills) #, wikipedia_research=wiki_research)
+    plan = plan_chain.run(skills=skills, topic=prompt)
     skill_list = skills.split(",")
 
-    #wiki_research = []
     url_dict = {}
 
     for skill in skill_list:
         query = prompt + " how to get started with " + skill
         url_dict[skill] = search(query, tld="com", num=3, stop=3, pause=2)
 
-        #wiki_researchwiki.run(skill)
-
-    #st.write(skills)
-
     st.write(plan)
 
     for key, value in url_dict.items():
-        st.write(key)
+        st.write(key.capitalize())
         result = ""
 
         for i in value:
@@ -79,6 +62,3 @@ if prompt:
 
     with st.expander('Plan History'):
         st.info(plan_memory.buffer)
-
-    #with st.expander('Wikipedia Research'):
-    #    st.info(wiki_research)
